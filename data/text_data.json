@@ -1,11 +1,34 @@
 {
+    "starter_inv": [
+        {
+            "name": "drugs",
+            "type": "drugs",
+            "description": "High quality drugs",
+            "q": 10,
+            "price": 10
+        },
+        {
+            "name": "ricin",
+            "type": "weapon",
+            "description": "A deadly poison",
+            "q": 1,
+            "price": 60
+        },
+        {
+            "name": "knife",
+            "type": "weapon",
+            "description": "A simple pocket knife",
+            "q": 1,
+            "price": 20
+        }
+    ],
     "city_names": [
         "Towerlane",
         "Response",
         "Kamimake",
         "Song"
     ],
-    "place_prefix":[
+    "place_prefix": [
         "Steel's",
         "Machinator",
         "Big big",
@@ -19,7 +42,7 @@
         "Green light's",
         "Automatas"
     ],
-    "first_names":[
+    "first_names": [
         "Katrina",
         "Julie",
         "Julienne",
@@ -39,7 +62,7 @@
         "Mike",
         "Jesse"
     ],
-    "last_names":[
+    "last_names": [
         "White",
         "Black",
         "Septer",

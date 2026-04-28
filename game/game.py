@@ -2,9 +2,9 @@ import random
 import os
 import datetime
 import math
+from game.data import all_data as data
 
 max_actions = 3
-
 
 class Game:
 
@@ -16,6 +16,7 @@ class Game:
             # CHOICES PHASE
             print_title("Day " + str(self.day) + " | Ready for business.", 1)
             for i in range(max_actions):
+                print_inv_simple(self, self)
                 print_title(
                     ("What will you do ? " + str(i + 1) + "/" + str(max_actions)), 2
                 )
@@ -24,44 +25,25 @@ class Game:
             # harvest created drugs
             # distribute drugs to your dealers
             # Buy places
+            # EXPENSES
+            self.money -= calculate_expenses(self)
+        death_recap(game)
 
     def __init__(self, cities):
         self.name = "Player"
         self.money = 200
-        self.pending_infos: []
-        self.pending_actions: []
+        self.pending_infos = []
+        self.pending_actions = []
         self.day = 0
         self.cities = cities
-        self.inv = [
-            {
-                "name": "drugs",
-                "type": "drugs",
-                "description": "High quality drugs",
-                "q": 10,
-                "price": 10,
-            },
-            {
-                "name": "ricin",
-                "type": "weapon",
-                "description": "A deadly poison",
-                "q": 1,
-                "price": 60,
-            },
-            {
-                "name": "knife",
-                "type": "weapon",
-                "description": "A simple pocket knife",
-                "q": 1,
-                "price": 20,
-            },
-        ]
-        self.city = cities[0]  # Sets the active city
-        self.friends = []  # pour les relations avec les autres personnages
+        self.inv = data()["starter_inv"]
+        self.city = cities[0]
+        self.friends = []
         self.known_places = []
         self.owned_places = []
         self.prison = []  # Where found criminals are locked in
         self.current_place = "Home"
-        ### RANDOM SEEDING ###
+        self.home_rent = 35
         for i in range(3):
             self.friends.append(
                 self.city.characters[random.randrange(0, len(self.city.characters))]
@@ -78,6 +60,11 @@ class Game:
 # Game functions
 ##################################
 
+def calculate_expenses(game):
+    expenses = game.home_rent
+    for place in game.owned_places:
+        expenses += place.expenses
+    return expenses
 
 def choose_main_action(game):
     macro_actions = {
@@ -113,12 +100,10 @@ def choose_main_action(game):
     if selected_action == "bail_out":
         print("To implement...")
 
-
 def goto(game):
     place = select_a_place(game)
     visit_place(game, place)
     place_actions(game, place)
-
 
 def explore(game):
     print("\nWandering around the city, you discover a new place.")
@@ -131,7 +116,6 @@ def explore(game):
     visit_place(game, place)
     place_actions(game, place)
 
-
 def place_actions(game, place):
     game.current_place = place
     if place.pop != []:
@@ -139,7 +123,6 @@ def place_actions(game, place):
     else:
         print("\nThere is nothing to do here. You leave the place.")
     game.current_place = "Home"
-
 
 def ask_for_n(arr, choice_text="Your choice: "):
     ask = ""
@@ -153,13 +136,11 @@ def ask_for_n(arr, choice_text="Your choice: "):
             return random.randrange(0, len(arr))
         print("Wrong input. Please input a valid digit.")
 
-
 def list_arr(arr):
     s = ""
     for item in arr:
         s = s, item
     return s
-
 
 def short_friend_description(char):
     s = ""
@@ -169,7 +150,6 @@ def short_friend_description(char):
         return "(" + s + ")"
     else:
         return ""
-
 
 def select_a_place(game):
     print()
@@ -185,7 +165,6 @@ def select_a_place(game):
         )
     selected_place = game.known_places[ask_for_n(game.known_places)]
     return selected_place
-
 
 def meet_a_friend(game):
     print("\nWho do you wanna meet?")
@@ -215,13 +194,13 @@ def interact(game, place, char):
     interact_actions = {
         "chat": "Chat and get to know him/her better",
         "sell": "Sell drugs",
-        # "kill": "Kill this person",
-        # "intimidate": "Intimidate this person",
-        # "bribe": "Bribe this person"
+        "buy": "Buy items (drugs, weapons, other items)",
+        "kill": "Kill this person (with poison, a weapon, by hand...)",
+        'indimidate': "Intimidate this person to state who's the boss.",
+        "bribe": "Buy this persons fidelity with money"
     }
     possible_actions = []
     possible_actions.append("chat")
-    # possible_actions.append("sell")
     for item in game.inv:
         if item["name"] == "drugs":
             possible_actions.append("sell")
@@ -246,9 +225,11 @@ def interact(game, place, char):
                 print("You discovered that " + char.name + " is a " + discovered)
                 befriend(game, char)
             else:
-                print("You did not discover anything interesting about " + char.name + ".")
+                print(
+                    "You did not discover anything interesting about " + char.name + "."
+                )
         case "sell":
-            print("You try to sell " + char.name + "drugs.")
+            print("You try to sell " + char.name + " drugs.")
             chances_to_sell = random.randrange(0, 10)
             max_q = 3
             if is_a_friend(game, char):
@@ -258,7 +239,7 @@ def interact(game, place, char):
                 max_q = 3
             if "addict" in char.tags:
                 chances_to_sell += 60
-                max_q = 6
+                max_q = 8
             if "dealer" in char.tags:
                 chances_to_sell += 70
                 max_q = 20
@@ -268,7 +249,6 @@ def interact(game, place, char):
                 chances_to_sell += 20
                 max_q = 20
             if random.randrange(1, 101) < chances_to_sell:
-            # if True:
                 available_q = 0
                 drugs_price = 10
                 drug_item = {}
@@ -289,15 +269,18 @@ def interact(game, place, char):
                         char.name
                         + " agreed to buy "
                         + str(can_buy_q)
-                        + "g of drugs from you for " + str(can_buy_q * drugs_price) + "$."
+                        + "g of drugs from you for "
+                        + str(can_buy_q * drugs_price)
+                        + "$."
                     )
                     transfer_item(game, game, char, drug_item, can_buy_q)
                     transfer_money(game, char, game, can_buy_q * drugs_price)
-                    print_inv_simple(game, game)
-                    print_inv_simple(game, char)
                     cop_watches(game, place, char, crime_level=1)
             else:
                 print(char.name + " wasn't interested.")
+                # if "cop" in char.tags:
+                if True:
+                    instant_game_over(game, "You tried to sell drugs to a cop.")
 
 def cop_watches(game, place, char, crime_level):
     cop_presence = False
@@ -305,12 +288,13 @@ def cop_watches(game, place, char, crime_level):
         if "cop" in guy.tags:
             print("\nYou feel observed.")
             cop_presence = True
+            break
     if cop_presence:
         risk_factor = random.randrange(0, 10) + (place.light / 2)
         if random.randrange(0, 101) < risk_factor:
             suspicion = random.randrange(0, 101)
             if suspicion < (crime_level * 10) * 2:
-                print("Arrested. Game over.")
+                instant_game_over(game, "A cop saw you deal and locked you in.")
             else:
                 print("Cops are launching an investigation on you.")
 
@@ -331,42 +315,101 @@ def remove_item(game, recipient, q, trade_item):
             if item["q"] < 1:
                 recipient.inv.remove(item)
 
-
 def print_inv_simple(game, person, money=True, inv=True):
     print_title(person.name + " 's inventory", 3)
-    if money:
-        print("  - Money: " + str(person.money) + "$")
+    print()
     if inv:
-        lines_arr = []
+        longest_lines = {
+            "name": 0,
+            "type": 0,
+            "description": 0,
+            "q": 0,
+            "price": 0,
+        }
         for item in person.inv:
             for key, value in item.items():
-                lines_arr.append(key.capitalize() + ": " + str(value).capitalize())
-            print("  - " + " | ".join(lines_arr))
-            lines_arr = []
-
+                length = len(str(value))
+                if length > longest_lines[key]:
+                    longest_lines[key] = length
+        # Columns titles
+        line_to_print = []
+        for key, value in longest_lines.items():
+            spaces = longest_lines[key] - len(key)
+            line_to_print.append(key.upper() + "_" * spaces)
+        print("_|_".join(line_to_print))
+        # Item lines
+        for item in person.inv:
+            line_to_print = []
+            for (
+                key,
+                value,
+            ) in item.items():
+                if key == "price":
+                    value = (str(value) + " (" + str(value * item["q"]) + ")")
+                spaces = longest_lines[key] - len(str(value))
+                line_to_print.append(str(value) + " " * spaces)
+            print(" | ".join(line_to_print))
+    # Money
+    if money:
+        print()
+        expenses = game.home_rent
+        if person == game:
+            for place in game.owned_places:
+                expenses += place.expenses
+        account = [
+            {"money": str(person.money)},
+            {"expenses": str(expenses)},
+            {"remaining days": str(math.floor(person.money / expenses))}
+        ]
+        # Define the longest lines
+        longest_lines = {}
+        for item in account:
+            for key, value in item.items():
+                longest_lines[key] = 0
+        for item in account:
+            for key, value in item.items():
+                length = 0
+                if len(key) > len(value):
+                    length = len(key)
+                else:
+                    length = len(value)
+                if length > longest_lines[key]:
+                    longest_lines[key] = length
+        # Columns titles
+        line_to_print = []
+        for key, value in longest_lines.items():
+            spaces = longest_lines[key] - len(key)
+            line_to_print.append(key.upper() + "_" * spaces)
+        print("_|_".join(line_to_print))
+        # Item lines
+        line_to_print = []
+        for item in account:
+            for (
+                key,
+                value,
+            ) in item.items():
+                spaces = longest_lines[key] - len(str(value))
+                line_to_print.append(str(value) + " " * spaces)
+        print(" | ".join(line_to_print))
 
 def transfer_item(game, sender, recipient, item, q):
     remove_item(game, sender, q, item)
     add_item(game, recipient, q, item)
 
-
 def transfer_money(game, sender, recipient, q):
     sender.money -= q
     recipient.money += q
-
 
 def is_a_friend(game, char):
     if char in game.friends:
         return True
     return False
 
-
 def befriend(game, char):
     if not char in game.friends:
         print("\n" + char.name + " became your friend.")
         char.loyalty += 10
         game.friends.append(char)
-
 
 def people_go_to_places(game):
     characters = game.city.characters
@@ -381,9 +424,7 @@ def people_go_to_places(game):
             ):
                 if len(place.pop) < place.max_pop:
                     place.pop.append(char)
-                    # print(char.name, char.reputation, "went to " + place.name, place.reputation)
                     break
-
 
 def describe_place(place, short=False):
     light_text = ""
@@ -419,7 +460,6 @@ def describe_place(place, short=False):
         reputation_text = "seems normal"
     elif place.reputation < 101:
         reputation_text = "has good vibes"
-
     if short == False:
         return (
             "\nThis "
@@ -437,7 +477,6 @@ def describe_place(place, short=False):
             size_text.capitalize() + " and " + light_text + ", " + reputation_text + "."
         )
 
-
 def get_char_appearence(game, char):
     total_city_pop = len(game.city.characters)
     medium_richness = 0
@@ -445,8 +484,6 @@ def get_char_appearence(game, char):
         medium_richness += i_char.money
     medium_richness /= total_city_pop
     medium_richness = round(medium_richness)
-    # print("Medium richness", medium_richness)
-    # print("Char money", char.money)
     if char.money < medium_richness / 2:
         return "Looks poor."
     if char.money < medium_richness:
@@ -455,7 +492,6 @@ def get_char_appearence(game, char):
         return "Looks priviledged."
     else:
         return "Looks rich."
-
 
 def visit_place(game, place, debug=False):
     print_title(place.name)
@@ -475,14 +511,12 @@ def visit_place(game, place, debug=False):
                 " [" + str(i) + "] " + char.name + ", " + str(char.age) + char_vibes,
                 get_char_appearence(game, char),
             )
-
     if debug == True:
         print_title("DEBUG PLACE")
         print_instance(place)
         for char in place.pop:
             print("---")
             print_instance(char, 2)
-
 
 def print_title(text="unknown_title", p=3):
     char = "="
@@ -493,42 +527,49 @@ def print_title(text="unknown_title", p=3):
             char = "="
         case 1:
             char = "⁝"
-    title_len = 30
+    title_len = 50
     side_spaces = round((title_len - len(text)) / 2)
     print("\n" + char * title_len)
     print(" " * side_spaces + text + " " * side_spaces)
     print(char * title_len)
 
+def instant_game_over(game, reason):
+    print_title("GAME OVER - " + reason, 1)
+    death_recap(game)
+    quit()
 
 def is_game_over(game):
+    for action in game.pending_actions:
+        if action["action"] == "arrested":
+            print_title("GAME OVER - You were arrested while sleeping.", 1)
+            return True
     if game.money > 0:
         return False
     else:
+        print_title("GAME OVER - You lost all your money.", 1)
         return True
 
-
-def get_game_info(game):
-    print_title("Game info")
-    for city in game.cities:
-        print("City: " + city.name)
-        print("  Places:")
-        for place in city.places:
-            print("    " + place.name)
-            print_instance(place, 5)
-        print("  Characters:")
-        for char in city.characters:
-            print("    " + char.name)
-            print_instance(char, 5)
-        print("  Friends:")
-        for char in game.friends:
-            print("    " + char.name)
-            print_instance(char, 5)
-        print("  Discovered places:")
-        for pl in game.known_places:
-            print("    " + pl.name)
-            print_instance(pl, 5)
-    print("-----------------")
-
+def death_recap(game):
+    print("\nAfter " + str(game.day) + " days, you lost.")
+    print(
+        "You discovered "
+        + str(round(len(game.known_places) / len(game.city.places)) * 100)
+        + " percent of the city."
+    )
+    print("You made friends with " + str(len(game.friends)) + " people.")
+    secrets_n = 0
+    for friend in game.friends:
+        for disco in friend.known_tags:
+            secrets_n += 1
+    print(
+    "You were able to discover " + str(secrets_n) + " secrets about your friends. Congrats."
+    )
+    print(
+        "\nThere are some things you regret, other that puts you under shame. But there's one thing that made you very proud. You made a lot of money. ("
+        + str(game.money)
+        + "$)"
+    )
+    print("Dont worry too much. Everyone goes some day. Today was just your time.\n")
 
 def print_instance(i, tabs=0):
     for key, value in vars(i).items():

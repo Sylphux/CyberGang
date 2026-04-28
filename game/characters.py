@@ -5,7 +5,7 @@ weaknesses = [
     "bribing",
     "intimidation"
 ]
-# rep is a reputation modifier
+
 available_tags = [
     {"tag": "addict", "prob": 20, "rep": -5},
     {"tag": "dealer", "prob": 15, "rep": -10},
@@ -14,7 +14,8 @@ available_tags = [
     {"tag": "investigator", "prob": 7, "rep": 10},
     {"tag": "fixer", "prob": 8, "rep": 0},
     {"tag": "merchant", "prob": 8, "rep": 0},
-    {"tag": "enforcer", "prob": 5, "rep": -20}
+    {"tag": "enforcer", "prob": 6, "rep": -20},
+    {"tag": "manager", "prob": 6, "rep": 10} # Makes a passive link between chemist and dealer, allowing you to do other things
 ]
 
 max_tags_per_char = 3
@@ -41,9 +42,5 @@ class Character:
             self.reputation = 5
         if self.reputation > 95:
             self.reputation = 95
-        # if len(self.tags) > max_tags_per_char:
-        #     for i in range(len(self.tags) - max_tags_per_char):
-        #         self.tags.remove(random.choice(self.tags))
         if self.tags == []:
             self.tags = ["random"]
-        # print("Char: " + self.name, "rep:", self.reputation, "loy:", self.loyalty)
