@@ -5,7 +5,7 @@ from game.places import Place
 import os
 
 number_of_cities = 1
-number_of_characters_by_city = 100
+number_of_characters_by_city = 200
 number_of_places_by_city = 20
 
 def seed():
