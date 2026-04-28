@@ -3,6 +3,7 @@ import os
 import datetime
 import math
 from game.data import all_data as data
+from game.utils import ANSI
 
 max_actions = 3
 
@@ -530,7 +531,7 @@ def print_title(text="unknown_title", p=3):
     title_len = 50
     side_spaces = round((title_len - len(text)) / 2)
     print("\n" + char * title_len)
-    print(" " * side_spaces + text + " " * side_spaces)
+    print(ANSI.stylize(" " * side_spaces + text + " " * side_spaces, "red"))
     print(char * title_len)
 
 def instant_game_over(game, reason):
