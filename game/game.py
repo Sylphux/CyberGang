@@ -280,7 +280,7 @@ def interact(game, place, char):
             else:
                 print(char.name + " wasn't interested.")
                 # if "cop" in char.tags:
-                if True:
+                if "cop" in char.tags:
                     instant_game_over(game, "You tried to sell drugs to a cop.")
 
 def cop_watches(game, place, char, crime_level):
