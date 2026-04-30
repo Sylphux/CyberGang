@@ -1,3 +1,5 @@
+import json
+
 color_dict = {
     "BLACK": "0;30m",
     "RED": "0;31m",
@@ -31,3 +33,9 @@ class ANSI():
     def stylize(string, style):
         code = color_dict[style.upper()]
         return "\33[" + code.format(code=code) + string + "\33[" + color_dict["COLOR_END"].format(code=code)
+
+def all_data():
+    items = []
+    with open("data/text_data.json") as json_file:
+        items = json.load(json_file)
+    return items

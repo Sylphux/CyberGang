@@ -1,4 +1,4 @@
-from game.data import all_data as data
+from game.utils import all_data as data
 import random
 
 place_types = [
