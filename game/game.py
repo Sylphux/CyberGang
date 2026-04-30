@@ -28,7 +28,7 @@ class Game:
             # Buy places
             # EXPENSES
             self.money -= calculate_expenses(self)
-        death_recap(game)
+        death_recap(self)
 
     def __init__(self, cities):
         self.name = "Player"
@@ -415,8 +415,10 @@ def befriend(game, char):
 def people_go_to_places(game):
     characters = game.city.characters
     places = game.city.places
-    rep_tolerance = 20
+    rep_tolerance = 20 # Repartition modifier
     random.shuffle(characters)
+    for place in game.city.places:
+        place.pop = []
     for char in characters:
         random.shuffle(places)
         for place in places:
